@@ -1,11 +1,10 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, useGLTF, useTexture, MeshTransmissionMaterial } from '@react-three/drei'
+import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { useRef } from 'react'
 
 function Scene() {
   const { scene, materials, nodes } = useGLTF('/models/room_portfolio.glb')
-
 
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
@@ -19,51 +18,44 @@ function Scene() {
   })
 
   scene.traverse((child) => {
-    if (child.isMesh && child.material.map) {
-      child.material.map.minFilter = THREE.LinearFilter; 
+    if (child.isMesh) {
+
+      if (child.name =="TextureOne" || child.name=="fish1" || child.name=="fish2" || child.name=="fish3"){ 
+        child.material = new THREE.MeshBasicMaterial({ map: tex1 })
+      } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
+        child.material = new THREE.MeshBasicMaterial({ map: tex2 })
+      } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
+        child.material = new THREE.MeshBasicMaterial({ map: tex3 })
+      } else if (child.name == "coffee_ice" || child.name == "water_bottle"){ 
+        Glass(child)
+      } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
+        Glass(child)
+        child.material.thickness = 0.01
+      }  else if (child.name == "fish_tank_water"){
+        Water(child)
+      } 
+      
+
+      if (child.material.map){ 
+        child.material.map.minFilter = THREE.LinearFilter;
+      }
     }
   })
 
-  Glass(nodes)
-
   return (
     <>
-      <mesh 
-      geometry={nodes.TextureOne.geometry}
-      position={nodes.TextureOne.position}
-      rotation={nodes.TextureOne.rotation}
-      scale={nodes.TextureOne.scale}>
-        <meshBasicMaterial map={tex1} />
-      </mesh>
-
-      <mesh geometry={nodes.TextureTwo.geometry}
-      position={nodes.TextureTwo.position}
-      rotation={nodes.TextureTwo.rotation}
-      scale={nodes.TextureTwo.scale}>
-        <meshBasicMaterial map={tex2} />
-      </mesh>
-
-      <mesh geometry={nodes.TextureThree.geometry}
-      position={nodes.TextureThree.position}
-      rotation={nodes.TextureThree.rotation}
-      scale={nodes.TextureThree.scale}>
-        <meshBasicMaterial map={tex3} />
-      </mesh>
+      <primitive object={scene} />
     </>
   )
 }
 
 function SceneMovement(){
-
   const controls = useRef()
-
   useFrame(() => {
     const target = controls.current.target
-
-    target.x = THREE.MathUtils.clamp(target.x, -2, 0)
-    target.y = THREE.MathUtils.clamp(target.y, -2, 0)
-    target.z = THREE.MathUtils.clamp(target.z, -2, 0)
-
+    target.x = THREE.MathUtils.clamp(target.x, 0, 2)
+    target.y = THREE.MathUtils.clamp(target.y, 0, 2)
+    target.z = THREE.MathUtils.clamp(target.z, 0, 2)
     controls.current.update()
   })
 
@@ -72,38 +64,61 @@ function SceneMovement(){
       ref={controls}
       enablePan
       target={[-1.7, 0, -1.3]}
-      // onEnd={() => {
-      //   console.log('Target:', controls.current.target.toArray())
-      //   console.log('Camera:', controls.current.object.position.toArray())
-      // }}
       minPolarAngle={Math.PI / 9}
       maxPolarAngle={Math.PI / 2.5}
-      minDistance={2}
-      maxDistance={7.5}
+      minDistance={1}
+      maxDistance={5.5}
     />
   )
 }
 
-function Glass(nodes) {
+function Glass(child) {
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    thickness: 0.1, 
+    transmission: 1,
+    roughness: 0.05, 
+    ior: 1.5, 
+    chromaticAberration: 0.01, 
+    metalness: 0, 
+    clearcoat:1, 
+    envMapIntensity: 1.0
+  })
+  child.material = glassMaterial;
+}
 
-  // console.log(nodes)
+function Water(child){
+  const waterClearMaterial = new THREE.MeshPhysicalMaterial({
+    color: "#aed6e9",
+    transmission: 0.98,
+    transparent: true,
+    roughness: 0.02,
+    metalness: 0,
+    ior: 1.333,
+    thickness: 0.01,
+    attenuationColor: new THREE.Color("#73bee7"),
+    attenuationDistance: 4,
+    envMapIntensity: 2.0,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+  })
+  child.material = waterClearMaterial;
+}
 
+
+function Screen(nodes) {
   return (
-    <mesh geometry={nodes.output_lightblub.geometry}>
-      <MeshTransmissionMaterial
-        thickness={0.2}
-        transmission={1}
-        roughness={0}
-        ior={1.5}
-        chromaticAberration={0.01}
-      />
-  </mesh>    
+    <>
+      <mesh geometry={nodes.PC_Screen.geometry}
+          position={nodes.PC_Screen.position}
+          rotation={nodes.PC_Screen.rotation}>
+        <meshNormalMaterial/>
+      </mesh>
+    </>
   )
 }
 
 function CameraLogger(){
   const {camera} = useThree()
-
   useFrame(()=> 
     console.log(camera.position)
   )
@@ -116,9 +131,7 @@ export default function App() {
       <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
         <ambientLight />
         <Scene />
-        {/* <Glass /> */}
         <SceneMovement/>
-        {/* <CameraLogger/> */}
       </Canvas>
     </div>
   )
