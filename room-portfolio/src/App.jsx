@@ -5,6 +5,7 @@ import { useRef } from 'react'
 
 function Scene() {
   const { scene, materials, nodes } = useGLTF('/models/room_portfolio.glb')
+  // let fish1, fish2, fish3
 
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
@@ -22,6 +23,14 @@ function Scene() {
 
       if (child.name =="TextureOne" || child.name=="fish1" || child.name=="fish2" || child.name=="fish3"){ 
         child.material = new THREE.MeshBasicMaterial({ map: tex1 })
+        // if (child.name=="fish1"){
+        //   fish1 = child 
+        //   console.log(fish1.position)
+        // }
+        // console.log(fish1.geometry)
+        if (child.name.includes("fish")){Fish(child)}
+        // if (child.name=="fish1"){FishOneMovement(child)}
+
       } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
         child.material = new THREE.MeshBasicMaterial({ map: tex2 })
       } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
@@ -35,7 +44,6 @@ function Scene() {
         Water(child)
       } 
       
-
       if (child.material.map){ 
         child.material.map.minFilter = THREE.LinearFilter;
       }
@@ -104,6 +112,78 @@ function Water(child){
   child.material = waterClearMaterial;
 }
 
+
+function Fish(child){
+  if (child.name=="fish1"){
+    FishOneMovement(child)
+  } else if (child.name=="fish2"){
+    // fish2 = child 
+  } else if (child.name=="fish3"){
+    // fish3 = child 
+  }
+}
+
+function FishOneMovement(fish1){
+  console.log(fish1.position)
+
+  const bounds = {
+    minX: 0.5,
+    maxX: 0.6,
+    minZ: -0.35, 
+    maxZ: 0.8,
+    minY: 0.35,
+    maxY: 0.65, 
+  }
+
+  const state = useRef({ 
+    target: new THREE.Vector3(), // (0,0,0) 
+    speed: 0.4,
+    wait: 0,
+  })
+
+  const temp = new THREE.Vector3()
+
+  function randomTarget() {
+    return new THREE.Vector3(
+      THREE.MathUtils.randFloat(bounds.minX, bounds.maxX),
+      THREE.MathUtils.randFloat(bounds.minY, bounds.maxY),
+      THREE.MathUtils.randFloat(bounds.minZ, bounds.maxZ)
+    )
+  }
+
+  useFrame((_, delta) => {
+    if (!fish1) return
+
+    const fishState = state.current
+    
+    if (fishState.wait > 0) {
+      fishState.wait -= delta
+      return // if the wait time remains, return and check the next Frame 
+    }
+
+    if (fishState.target.lengthSq() === 0) {     
+      fishState.target.copy(randomTarget())
+    }
+
+    temp.subVectors(fishState.target, fish1.position)
+
+    if (temp.length() < 0.1) {
+      fishState.wait = THREE.MathUtils.randFloat(0, 2.5)
+      fishState.speed = THREE.MathUtils.randFloat(0.1, 0.4)
+      fishState.target.copy(randomTarget())
+      return // if the fish has not arrive yet, return and check the next Frame 
+    }
+
+    temp.normalize()
+    fish1.position.addScaledVector(temp, fishState.speed * delta)
+
+    fish1.lookAt(
+      fish1.position.x + temp.z,
+      fish1.position.y + temp.x,
+      fish1.position.z + temp.y
+    )
+  })
+}
 
 function Screen(nodes) {
   return (
