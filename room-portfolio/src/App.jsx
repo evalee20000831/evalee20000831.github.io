@@ -2,9 +2,11 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { useRef } from 'react'
+import Helper from './Helper.jsx'
 
 function Scene() {
-  const { scene, materials, nodes } = useGLTF('/models/room_v6.glb')
+  console.log("Scene rendered");
+  const { scene, materials, nodes } = useGLTF('/models/room_v8.glb')
 
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
@@ -17,16 +19,17 @@ function Scene() {
     tex.colorSpace = THREE.SRGBColorSpace
   })
 
-  const fish1 = scene.getObjectByName("fish1");
-  const fish2 = scene.getObjectByName("fish2");
-  const fish3 = scene.getObjectByName("fish3");
-
   scene.traverse((child) => {
     if (child.isMesh) {
 
-      if (child.name =="TextureOne" || child.name=="fish1" || child.name=="fish2" || child.name=="fish3"){ 
-        child.material = new THREE.MeshBasicMaterial({ map: tex1 })
-
+      if (child.name == "fish_tank_water"){
+        Water(child)
+      } else if (child.name =="TextureOne" || child.name.includes("fish")){ 
+        child.material = new THREE.MeshBasicMaterial({ map: tex1 })  
+      } else if (child.name.includes("Text_")){ 
+        child.material = new THREE.MeshBasicMaterial({color: "#a4b325" })
+      } else if (child.name.includes("Plane_")){ // for links 
+        child.visible = false; 
       } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
         child.material = new THREE.MeshBasicMaterial({ map: tex2 })
       } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
@@ -36,8 +39,6 @@ function Scene() {
       } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
         Glass(child)
         child.material.thickness = 0.01
-      }  else if (child.name == "fish_tank_water"){
-        Water(child)
       } 
       
       if (child.material.map){ 
@@ -46,18 +47,64 @@ function Scene() {
     }
   })
 
+  const fish1 = scene.getObjectByName("fish1");
+  const fish2 = scene.getObjectByName("fish2");
+  const fish3 = scene.getObjectByName("fish3");
 
   FishMovement(fish1) 
   FishMovement(fish2) 
   FishMovement(fish3) 
 
+  
+  Text(scene)
 
   return (
     <>
-      <primitive object={scene} />
+      <primitive 
+      object={scene} 
+      onClick={(e) => {
+        const obj = e.object; 
+
+        if (obj.userData.clickable){ 
+          console.log("clicked", e.object.name);
+          window.open(obj.userData.url, "_blank"); 
+        }
+
+      }}
+      />
     </>
   )
 }
+
+function Text(scene) { 
+
+  const textObjects = [
+    {
+      object: scene.getObjectByName("Plane_Github"),
+      url: "https://github.com/evalee20000831",
+    },
+    {
+      object: scene.getObjectByName("Plane_LinkedIn"),
+      url: "https://www.linkedin.com/in/jung-ho-eva-lee/",
+    },
+    {
+      object: scene.getObjectByName("Plane_Codebase"),
+      url: "https://github.com/evalee20000831/evalee20000831.github.io",
+    },
+    {
+      object: scene.getObjectByName("Plane_YouTube"),
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1",
+    }
+  ];
+
+  textObjects.forEach(({ object, url }) => {
+    if (object) {
+      object.userData.url = url;
+      object.userData.clickable = true;
+    }
+  });
+}
+
 
 function SceneMovement(){
   const controls = useRef()
@@ -114,51 +161,19 @@ function Water(child){
   child.material = waterClearMaterial;
 }
 
-
-function BoundsBox({ bounds, color = "red" }) {
-    const width = bounds.maxX - bounds.minX;
-    const height = bounds.maxY - bounds.minY;
-    const depth = bounds.maxZ - bounds.minZ;
-
-    const center = [
-      (bounds.minX + bounds.maxX) / 2,
-      (bounds.minY + bounds.maxY) / 2,
-      (bounds.minZ + bounds.maxZ) / 2,
-    ];
-
-    return (
-      <mesh position={center}>
-        <boxGeometry args={[width, height, depth]} />
-        <meshBasicMaterial
-          color={color}
-          wireframe
-          transparent
-          opacity={0.5}
-        />
-      </mesh>
-    );
-  }
-
 function FishMovement(fish){
-
   console.log("FishMovement initialized", fish?.name);
   
   const boundingBoxes = [
       {
-        minX: 0.5,
-        maxX: 0.6,
-        minY: 0.4,
-        maxY: 0.6,
-        minZ: -0.2,
-        maxZ: 0.8,
+        minX: 0.5, maxX: 0.6,
+        minY: 0.4, maxY: 0.6,
+        minZ: -0.2,maxZ: 0.8,
       }, 
       {
-        minX: -0.5,
-        maxX: 0.5,
-        minY: 0.4,
-        maxY: 0.6,
-        minZ: 0.4,
-        maxZ: 0.7,
+        minX: -0.5,maxX: 0.5,
+        minY: 0.4, maxY: 0.6,
+        minZ: 0.4, maxZ: 0.7,
       }
   ];
 
@@ -221,7 +236,7 @@ function FishMovement(fish){
         console.log(delta);
     }
 
-    delta = Math.min(delta, 0.05); // avoid finish disappearing 
+    delta = Math.min(delta, 0.05); // avoid fish disappearing 
 
     const fishState = state.current
     
@@ -284,48 +299,13 @@ function Screen(nodes) {
   )
 }
 
-function CameraLogger(){
-  const {camera} = useThree()
-  useFrame(()=> 
-    console.log(camera.position)
-  )
-}
-
-
 export default function App() {
-  const boundingBoxes  = [
-    {
-      minX: 0.5,
-      maxX: 0.6,
-      minY: 0.4,
-      maxY: 0.6,
-      minZ: -0.2,
-      maxZ: 0.8,
-    }, 
-    {
-      minX: -0.5,
-      maxX: 0.5,
-      minY: 0.4,
-      maxY: 0.6,
-      minZ: 0.4,
-      maxZ: 0.7,
-    }
-
-];
-  
   return (
     <div style={{ width: '100vw', height: '100vh',}}>
       <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
-        <ambientLight />
         <Scene />
         <SceneMovement/>
-        {boundingBoxes.map((bounds, i) => (
-          <BoundsBox
-            key={i}
-            bounds={bounds}
-            color={i % 2 ? "lime" : "red"}
-          />
-        ))}
+        <Helper/>
       </Canvas>
     </div>
   )
