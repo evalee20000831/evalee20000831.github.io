@@ -1,13 +1,44 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import Helper from './Helper.jsx'
+import { Stats } from "@react-three/drei";
+
 
 function Scene() {
   console.log("Scene rendered");
   const { scene, materials, nodes } = useGLTF('/models/room_v8.glb')
 
+  const glassMaterial = useMemo(()=> 
+    new THREE.MeshPhysicalMaterial({
+      thickness: 0.1, 
+      transmission: 1,
+      roughness: 0.05, 
+      ior: 1.5, 
+      chromaticAberration: 0.01, 
+      metalness: 0, 
+      clearcoat:1, 
+      envMapIntensity: 1.0
+    }), []); 
+
+  const waterClearMaterial = useMemo(()=> 
+    new THREE.MeshPhysicalMaterial({
+      color: "#aed6e9",
+      transmission: 0.98,
+      transparent: true,
+      roughness: 0.02,
+      metalness: 0,
+      ior: 1.333,
+      thickness: 0.01,
+      attenuationColor: new THREE.Color("#73bee7"),
+      attenuationDistance: 4,
+      envMapIntensity: 2.0,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+    }), []); 
+  
+  
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
     '/textures/TextureSetTwo.webp',
@@ -19,44 +50,50 @@ function Scene() {
     tex.colorSpace = THREE.SRGBColorSpace
   })
 
-  scene.traverse((child) => {
-    if (child.isMesh) {
+  useEffect(()=>{
+    scene.traverse((child) => {
+      if (child.isMesh) {
 
-      if (child.name == "fish_tank_water"){
-        Water(child)
-      } else if (child.name =="TextureOne" || child.name.includes("fish")){ 
-        child.material = new THREE.MeshBasicMaterial({ map: tex1 })  
-      } else if (child.name.includes("Text_")){ 
-        child.material = new THREE.MeshBasicMaterial({color: "#a4b325" })
-      } else if (child.name.includes("Plane_")){ // for links 
-        child.visible = false; 
-      } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
-        child.material = new THREE.MeshBasicMaterial({ map: tex2 })
-      } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
-        child.material = new THREE.MeshBasicMaterial({ map: tex3 })
-      } else if (child.name == "coffee_ice" || child.name == "water_bottle"){ 
-        Glass(child)
-      } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
-        Glass(child)
-        child.material.thickness = 0.01
-      } 
-      
-      if (child.material.map){ 
-        child.material.map.minFilter = THREE.LinearFilter;
+        if (child.name == "fish_tank_water"){
+          child.material = waterClearMaterial
+        } else if (child.name =="TextureOne" || child.name.includes("fish")){ 
+          child.material = new THREE.MeshBasicMaterial({ map: tex1 })  
+        } else if (child.name.includes("Text_")){ 
+          child.material = new THREE.MeshBasicMaterial({color: "#d33282" })
+        } else if (child.name.includes("Plane_")){ // for links 
+          child.visible = false; 
+        } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
+          child.material = new THREE.MeshBasicMaterial({ map: tex2 })
+        } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
+          child.material = new THREE.MeshBasicMaterial({ map: tex3 })
+        } else if (child.name == "coffee_ice" || child.name == "water_bottle"){ 
+          child.material = glassMaterial;
+        } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
+          child.material = glassMaterial;
+          child.material.thickness = 0.01
+        } 
+        
+        if (child.material.map){ 
+          child.material.map.minFilter = THREE.LinearFilter;
+        }
       }
-    }
-  })
+    })
+
+    Text(scene)
+
+  }, [scene])
+  
 
   const fish1 = scene.getObjectByName("fish1");
   const fish2 = scene.getObjectByName("fish2");
   const fish3 = scene.getObjectByName("fish3");
+  const fan = scene.getObjectByName("fan_spin"); 
 
   FishMovement(fish1) 
   FishMovement(fish2) 
   FishMovement(fish3) 
-
   
-  Text(scene)
+  Fan(fan)
 
   return (
     <>
@@ -64,16 +101,22 @@ function Scene() {
       object={scene} 
       onClick={(e) => {
         const obj = e.object; 
-
         if (obj.userData.clickable){ 
           console.log("clicked", e.object.name);
           window.open(obj.userData.url, "_blank"); 
         }
-
       }}
       />
     </>
   )
+}
+
+function Fan(fan){ 
+  const spinAxis = new THREE.Vector3(0, 1, 0);
+  useFrame((_, delta) =>{
+    if (!fan) return
+    fan.rotateOnAxis(spinAxis, delta * 8);
+  })
 }
 
 function Text(scene) { 
@@ -105,7 +148,6 @@ function Text(scene) {
   });
 }
 
-
 function SceneMovement(){
   const controls = useRef()
   useFrame(() => {
@@ -129,40 +171,9 @@ function SceneMovement(){
   )
 }
 
-function Glass(child) {
-  const glassMaterial = new THREE.MeshPhysicalMaterial({
-    thickness: 0.1, 
-    transmission: 1,
-    roughness: 0.05, 
-    ior: 1.5, 
-    chromaticAberration: 0.01, 
-    metalness: 0, 
-    clearcoat:1, 
-    envMapIntensity: 1.0
-  })
-  child.material = glassMaterial;
-}
-
-function Water(child){
-  const waterClearMaterial = new THREE.MeshPhysicalMaterial({
-    color: "#aed6e9",
-    transmission: 0.98,
-    transparent: true,
-    roughness: 0.02,
-    metalness: 0,
-    ior: 1.333,
-    thickness: 0.01,
-    attenuationColor: new THREE.Color("#73bee7"),
-    attenuationDistance: 4,
-    envMapIntensity: 2.0,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-  })
-  child.material = waterClearMaterial;
-}
-
 function FishMovement(fish){
   console.log("FishMovement initialized", fish?.name);
+  console.log(fish.geometry.attributes.position.count)
   
   const boundingBoxes = [
       {
@@ -213,7 +224,7 @@ function FishMovement(fish){
     }
 
     const destination = randomTarget(nextBox);
-    console.log(destination);
+    // console.log(destination);
 
     if (nextBox === fishState.currentBox) {
       // Stay in the same box
@@ -232,9 +243,9 @@ function FishMovement(fish){
   useFrame((_, delta) => {
     if (!fish) return
 
-    if (delta > 0.1) {
-        console.log(delta);
-    }
+    // if (delta > 0.1) {
+    //     console.log(delta);
+    // }
 
     delta = Math.min(delta, 0.05); // avoid fish disappearing 
 
@@ -306,6 +317,7 @@ export default function App() {
         <Scene />
         <SceneMovement/>
         <Helper/>
+        <Stats/> 
       </Canvas>
     </div>
   )
