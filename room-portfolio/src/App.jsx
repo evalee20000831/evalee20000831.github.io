@@ -37,7 +37,19 @@ function Scene() {
       clearcoat: 1.0,
       clearcoatRoughness: 0.05,
     }), []); 
-  
+
+  const vid = document.createElement("video"); 
+  vid.src = "/video/Blender_Animation.mp4";
+  vid.loop = true; 
+  vid.muted = true; 
+  vid.playsInline = true; 
+  vid.autoplay = true; 
+  vid.play();   
+  const videoTexture = new THREE.VideoTexture(vid); 
+  videoTexture.colorSpace = THREE.SRGBColorSpace; 
+  videoTexture.flipY = false; 
+  videoTexture.center.set(0.5, 0.5); 
+  videoTexture.rotation = -Math.PI * 0.5;
   
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
@@ -71,7 +83,13 @@ function Scene() {
         } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
           child.material = glassMaterial;
           child.material.thickness = 0.01
-        } 
+        } else if (child.name == "PC_Screen"){
+            child.material = new THREE.MeshBasicMaterial({
+            map: videoTexture,
+            transparent: true,
+            opacity: 0.9,
+          });
+        }
         
         if (child.material.map){ 
           child.material.map.minFilter = THREE.LinearFilter;
@@ -296,18 +314,6 @@ function FishMovement(fish){
 
     fish.quaternion.slerp(targetQuat, delta * 2); // adjust 2 for turn speed
   })
-}
-
-function Screen(nodes) {
-  return (
-    <>
-      <mesh geometry={nodes.PC_Screen.geometry}
-          position={nodes.PC_Screen.position}
-          rotation={nodes.PC_Screen.rotation}>
-        <meshNormalMaterial/>
-      </mesh>
-    </>
-  )
 }
 
 export default function App() {
