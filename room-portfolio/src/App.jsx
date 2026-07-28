@@ -1,14 +1,15 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
+import { OrbitControls, PositionalAudio, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Helper from './Helper.jsx'
 import { Stats } from "@react-three/drei";
 
 
 function Scene() {
   console.log("Scene rendered");
-  const { scene, materials, nodes } = useGLTF('/models/room_v8.glb')
+  const { scene, materials, nodes } = useGLTF('/models/room_v9.glb')
+  const speakerRef = useRef(null);
 
   const glassMaterial = useMemo(()=> 
     new THREE.MeshPhysicalMaterial({
@@ -38,18 +39,23 @@ function Scene() {
       clearcoatRoughness: 0.05,
     }), []); 
 
-  const vid = document.createElement("video"); 
-  vid.src = "/video/Blender_Animation.mp4";
-  vid.loop = true; 
-  vid.muted = true; 
-  vid.playsInline = true; 
-  vid.autoplay = true; 
-  vid.play();   
-  const videoTexture = new THREE.VideoTexture(vid); 
-  videoTexture.colorSpace = THREE.SRGBColorSpace; 
-  videoTexture.flipY = false; 
-  videoTexture.center.set(0.5, 0.5); 
-  videoTexture.rotation = -Math.PI * 0.5;
+  const {videoTexture} = useMemo(() => {
+    const vid = document.createElement("video"); 
+    vid.src = "/video/Blender_Animation.mp4";
+    vid.loop = true; 
+    vid.muted = true; 
+    vid.playsInline = true; 
+    vid.autoplay = true; 
+    vid.play();   
+    const texture = new THREE.VideoTexture(vid); 
+    texture.colorSpace = THREE.SRGBColorSpace; 
+    texture.flipY = false; 
+    texture.center.set(0.5, 0.5); 
+    texture.rotation = -Math.PI * 0.5;
+
+    return {videoTexture: texture} 
+  }, [])
+  
   
   const [tex1, tex2, tex3] = useTexture([
     '/textures/TextureSetOne.webp',
@@ -74,9 +80,9 @@ function Scene() {
           child.material = new THREE.MeshBasicMaterial({color: "#d33282" })
         } else if (child.name.includes("Plane_")){ // for links 
           child.visible = false; 
-        } else if (child.name =="TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
+        } else if (child.name == "TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
           child.material = new THREE.MeshBasicMaterial({ map: tex2 })
-        } else if (child.name =="TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
+        } else if (child.name == "TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
           child.material = new THREE.MeshBasicMaterial({ map: tex3 })
         } else if (child.name == "coffee_ice" || child.name == "water_bottle"){ 
           child.material = glassMaterial;
@@ -89,6 +95,9 @@ function Scene() {
             transparent: true,
             opacity: 0.9,
           });
+        } else if (child.name=="TextureTwo_Speaker"){
+          child.material = new THREE.MeshBasicMaterial({ map: tex2 })
+          speakerRef.current = child; 
         }
         
         if (child.material.map){ 
@@ -107,12 +116,6 @@ function Scene() {
   const fish3 = scene.getObjectByName("fish3");
   const fan = scene.getObjectByName("fan_spin"); 
 
-  FishMovement(fish1) 
-  FishMovement(fish2) 
-  FishMovement(fish3) 
-  
-  Fan(fan)
-
   return (
     <>
       <primitive 
@@ -125,11 +128,35 @@ function Scene() {
         }
       }}
       />
+      {speakerRef.current && (
+        <SpeakerAudio object={speakerRef.current} />
+      )}
+      <FishMovement fish={fish1} />
+      <FishMovement fish={fish2} />
+      <FishMovement fish={fish3} />
+      <Fan fan={fan} />
+
     </>
   )
 }
 
-function Fan(fan){ 
+function SpeakerAudio({ object }) {
+
+  
+  return (
+    <primitive object={object}>
+      <PositionalAudio
+        url="/audio/citypop.mp3"
+        autoplay
+        loop
+        distance={3}
+        volume={1}
+      />
+    </primitive>
+  );
+}
+
+function Fan({ fan }){ 
   const spinAxis = new THREE.Vector3(0, 1, 0);
   useFrame((_, delta) =>{
     if (!fan) return
@@ -189,7 +216,7 @@ function SceneMovement(){
   )
 }
 
-function FishMovement(fish){
+function FishMovement({ fish }){
   console.log("FishMovement initialized", fish?.name);
   console.log(fish.geometry.attributes.position.count)
   
