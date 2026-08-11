@@ -9,7 +9,6 @@ import { Stats } from "@react-three/drei";
 function Scene() {
   console.log("Scene rendered");
   const { scene, materials, nodes } = useGLTF('/models/room_v9.glb')
-  const speakerRef = useRef(null);
 
   const glassMaterial = useMemo(()=> 
     new THREE.MeshPhysicalMaterial({
@@ -97,7 +96,6 @@ function Scene() {
           });
         } else if (child.name=="TextureTwo_Speaker"){
           child.material = new THREE.MeshBasicMaterial({ map: tex2 })
-          speakerRef.current = child; 
         }
         
         if (child.material.map){ 
@@ -115,6 +113,7 @@ function Scene() {
   const fish2 = scene.getObjectByName("fish2");
   const fish3 = scene.getObjectByName("fish3");
   const fan = scene.getObjectByName("fan_spin"); 
+  const speaker = scene.getObjectByName("TextureTwo_Speaker"); 
 
   return (
     <>
@@ -128,8 +127,8 @@ function Scene() {
         }
       }}
       />
-      {speakerRef.current && (
-        <SpeakerAudio object={speakerRef.current} />
+      {speaker && (
+        <SpeakerAudio object={speaker} />
       )}
       <FishMovement fish={fish1} />
       <FishMovement fish={fish2} />
@@ -142,7 +141,7 @@ function Scene() {
 
 function SpeakerAudio({ object }) {
 
-  
+  console.log("SpeakerAudio Plays")
   return (
     <primitive object={object}>
       <PositionalAudio
@@ -154,6 +153,25 @@ function SpeakerAudio({ object }) {
       />
     </primitive>
   );
+}
+
+function LoadingScreen({onEnter}){
+
+  return (
+    <div style={{
+        position: "absolute",
+        background: "#111", 
+        color: "white",
+      }}>
+      <h1>My Portfolio</h1>
+      <button onClick={onEnter} style={{
+        marginTop: 20,
+        padding: "12px 32px",
+        cursor: "pointer",
+        }}>Enter
+      </button>
+    </div>
+  )
 }
 
 function Fan({ fan }){ 
@@ -344,14 +362,18 @@ function FishMovement({ fish }){
 }
 
 export default function App() {
+  const [entered, setEntered] = useState(false)
   return (
     <div style={{ width: '100vw', height: '100vh',}}>
-      <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
-        <Scene />
-        <SceneMovement/>
-        <Helper/>
-        <Stats/> 
-      </Canvas>
+      
+      {!entered ? (<LoadingScreen onEnter={() => setEntered(true)}/>): (
+        <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
+          <Scene/>
+          <SceneMovement/>
+          <Helper/>
+          <Stats/> 
+        </Canvas>
+      )}
     </div>
   )
 }
