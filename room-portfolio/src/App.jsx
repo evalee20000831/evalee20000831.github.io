@@ -159,16 +159,53 @@ function LoadingScreen({onEnter}){
 
   return (
     <div style={{
-        position: "absolute",
-        background: "#111", 
-        color: "white",
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "#0c132e", 
+        color: "#8ba691",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "'Fredoka', sans-serif",
       }}>
-      <h1>My Portfolio</h1>
+      <h1 style={{
+        fontSize: "36px",
+        fontWeight: 500,
+        margin: 0,
+        }} 
+      >Eva's Room</h1>
+      
       <button onClick={onEnter} style={{
         marginTop: 20,
         padding: "12px 32px",
+        fontSize: "18px",
+        fontWeight: 500,
+        letterSpacing: "1px",
         cursor: "pointer",
-        }}>Enter
+        fontFamily: "'Fredoka', sans-serif",
+        color: "#4d5f67",
+        background: "#f3d7ff",
+        border: "3px solid #c99bdb",
+        borderRadius: "18px",
+        boxShadow: "0 5px 0 #8e659c",
+        transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-3px)";
+          e.currentTarget.style.boxShadow = "0 8px 0 #8e659c";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 5px 0 #8e659c";
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.transform = "translateY(3px)";
+          e.currentTarget.style.boxShadow = "0 2px 0 #8e659c";
+        }}
+        >✦ ENTER ✦
       </button>
     </div>
   )
