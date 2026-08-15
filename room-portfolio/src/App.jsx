@@ -1,9 +1,8 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, PositionalAudio, useGLTF, useTexture } from '@react-three/drei'
+import { OrbitControls, PositionalAudio, useGLTF, useTexture, Stats, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import Helper from './Helper.jsx'
-import { Stats } from "@react-three/drei";
 
 
 function Scene() {
@@ -155,7 +154,7 @@ function SpeakerAudio({ object }) {
   );
 }
 
-function LoadingScreen({onEnter}){
+function LoadingScreen({ progress, ready, onEnter}){
 
   return (
     <div style={{
@@ -176,39 +175,71 @@ function LoadingScreen({onEnter}){
         fontWeight: 500,
         margin: 0,
         }} 
-      >Eva's Room</h1>
-      
-      <button onClick={onEnter} style={{
-        marginTop: 20,
-        padding: "12px 32px",
-        fontSize: "18px",
-        fontWeight: 500,
-        letterSpacing: "1px",
-        cursor: "pointer",
-        fontFamily: "'Fredoka', sans-serif",
-        color: "#4d5f67",
-        background: "#f3d7ff",
-        border: "3px solid #c99bdb",
-        borderRadius: "18px",
-        boxShadow: "0 5px 0 #8e659c",
-        transition: "all 0.15s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-3px)";
-          e.currentTarget.style.boxShadow = "0 8px 0 #8e659c";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 5px 0 #8e659c";
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = "translateY(3px)";
-          e.currentTarget.style.boxShadow = "0 2px 0 #8e659c";
-        }}
-        >✦ ENTER ✦
-      </button>
+      >エバの部屋</h1>
+
+      {!ready ? (
+        <>
+        <div style={{
+          marginTop: 30,
+          width: "250px",
+          height: "8px",
+          background: "#263354",
+          borderRadius: "10px",
+          overflow: "hidden",
+        }}>
+        <div style={{
+          width: `${progress}%`,
+          height: "100%",
+          background: "#f3d7ff",
+          borderRadius: "10px",
+          transition: "width 0.2s ease",
+        }} /> 
+        </div>
+        <p style={{
+          marginTop: 15,
+          fontSize: "16px",
+          letterSpacing: "1px",
+          }}>Loading... {Math.round(progress)}%
+        </p>
+        </>) : (
+
+          <button onClick={onEnter} style={{
+            marginTop: 20,
+            padding: "12px 32px",
+            fontSize: "18px",
+            fontWeight: 500,
+            letterSpacing: "1px",
+            cursor: "pointer",
+            fontFamily: "'Fredoka', sans-serif",
+            color: "#4d5f67",
+            background: "#f3d7ff",
+            border: "3px solid #c99bdb",
+            borderRadius: "18px",
+            boxShadow: "0 12px 0 #8e659c",
+            transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(4px)";
+              e.currentTarget.style.boxShadow = "0 8px 0 #8e659c";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 12px 0 #8e659c";
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "translateY(3px)";
+              e.currentTarget.style.boxShadow = "0 2px 0 #8e659c";
+            }}
+            >✦ ENTER ✦
+          </button>
+        )
+      }
     </div>
   )
+}
+
+function HandleEnter(){
+
 }
 
 function Fan({ fan }){ 
@@ -400,16 +431,32 @@ function FishMovement({ fish }){
 
 export default function App() {
   const [entered, setEntered] = useState(false)
+  const [displayProgress, setDisplayProgress] = useState(0)
+  const {progress} = useProgress()
+  const ready = displayProgress >= 100 
+
+  useEffect(()=> {
+    setDisplayProgress((current) => Math.max(current, progress))
+  }, [progress])
+
   return (
-    <div style={{ width: '100vw', height: '100vh',}}>
+    <div style={{ width: '100vw', height: '100vh', }}>
       
-      {!entered ? (<LoadingScreen onEnter={() => setEntered(true)}/>): (
-        <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
+      <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
+        <Suspense fallback={null}>
           <Scene/>
           <SceneMovement/>
           <Helper/>
-          <Stats/> 
-        </Canvas>
+          <Stats/>
+        </Suspense> 
+      </Canvas>
+      
+      {!entered && (
+        <LoadingScreen
+          progress={displayProgress}
+          ready={ready}
+          onEnter={() => setEntered(true)}
+        />
       )}
     </div>
   )
