@@ -238,8 +238,31 @@ function LoadingScreen({ progress, ready, onEnter}){
   )
 }
 
-function HandleEnter(){
+function HandleEnter({active, onComplete}){
 
+  useEffect(() => {
+
+    if (!active) return; 
+
+    const timer = setTimeout(() => { 
+      if (onComplete) {onComplete();}
+    }, 1200);
+    
+    return () => clearTimeout(timer); 
+  }, [active, onComplete]);
+
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0, 
+      zIndex: 100, 
+
+      pointerEvents: active ? "auto": "none", 
+      background: "#0c132e", 
+      opacity: active ? 1 : 0, 
+      transition: active ? "opacity 0.5s ease-in" : "opacity 0.7s ease-out", 
+    }}/>
+  )
 }
 
 function Fan({ fan }){ 
@@ -431,13 +454,23 @@ function FishMovement({ fish }){
 
 export default function App() {
   const [entered, setEntered] = useState(false)
+  const [transition, setTransition] = useState(false)
   const [displayProgress, setDisplayProgress] = useState(0)
   const {progress} = useProgress()
   const ready = displayProgress >= 100 
 
   useEffect(()=> {
-    setDisplayProgress((current) => Math.max(current, progress))
-  }, [progress])
+    setDisplayProgress((current) => Math.max(current, progress));
+  }, [progress]);
+
+  const handleEnter = () => {
+    setTransition(true); 
+  }; 
+
+  const handleTransitionComplete = () => {
+    setEntered(true);
+    setTransition(false); 
+  };
 
   return (
     <div style={{ width: '100vw', height: '100vh', }}>
@@ -455,9 +488,14 @@ export default function App() {
         <LoadingScreen
           progress={displayProgress}
           ready={ready}
-          onEnter={() => setEntered(true)}
+          onEnter={handleEnter}
         />
       )}
+
+      <HandleEnter 
+        active = {transition}
+        onComplete={handleTransitionComplete}
+      /> 
     </div>
   )
 }
