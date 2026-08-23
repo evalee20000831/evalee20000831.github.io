@@ -116,25 +116,37 @@ function Scene() {
 
   return (
     <>
-      <primitive 
-      object={scene} 
-      onClick={(e) => {
-        const obj = e.object; 
-        if (obj.userData.clickable){ 
-          console.log("clicked", e.object.name);
-          window.open(obj.userData.url, "_blank"); 
-        }
-      }}
+      <primitive
+        object={scene}
+
+        onPointerEnter={(e) => {
+          // stop propagation needs to be out here for the pointer cursor to work 
+          e.stopPropagation();
+
+          if (e.object.userData.clickable) {
+            
+            document.body.style.cursor = "pointer";
+          }
+        }}
+
+        onPointerLeave={() => {
+          document.body.style.cursor = "default";
+        }}
+
+        onClick={(e) => {
+          const obj = e.object; 
+          if (obj.userData.clickable){ 
+            console.log("clicked", e.object.name);
+            window.open(obj.userData.url, "_blank"); 
+          }
+        }}
       />
-      {speaker && (
-        <SpeakerAudio object={speaker} />
-      )}
+      {speaker && (<SpeakerAudio object={speaker} />)}
       <FishMovement fish={fish1} />
       <FishMovement fish={fish2} />
       <FishMovement fish={fish3} />
       <Fan fan={fan} />
-
-    </>
+  </>
   )
 }
 
