@@ -66,6 +66,14 @@ function Scene() {
     tex.colorSpace = THREE.SRGBColorSpace
   })
 
+  const sharedMaterials = useMemo(() => ({
+    tex1: new THREE.MeshBasicMaterial({ map: tex1 }),
+    tex2: new THREE.MeshBasicMaterial({ map: tex2 }),
+    tex3: new THREE.MeshBasicMaterial({ map: tex3 }),
+    pink: new THREE.MeshBasicMaterial({ color: "#d33282" }),
+  }), [tex1, tex2, tex3]);
+
+
   useEffect(()=>{
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -73,15 +81,15 @@ function Scene() {
         if (child.name == "fish_tank_water"){
           child.material = waterClearMaterial
         } else if (child.name =="TextureOne" || child.name.includes("fish")){ 
-          child.material = new THREE.MeshBasicMaterial({ map: tex1 })  
+          child.material = sharedMaterials.tex1; 
         } else if (child.name.includes("Text_")){ 
           child.material = new THREE.MeshBasicMaterial({color: "#d33282" })
         } else if (child.name.includes("Plane_")){ // for links 
           child.visible = false; 
         } else if (child.name == "TextureTwo" || child.name.includes("BézierCurve") || child.name=="fan_spin"){ 
-          child.material = new THREE.MeshBasicMaterial({ map: tex2 })
+          child.material = sharedMaterials.tex2; 
         } else if (child.name == "TextureThree" || child.name.includes("Plane") || child.name=="lantern_string"){ 
-          child.material = new THREE.MeshBasicMaterial({ map: tex3 })
+          child.material = sharedMaterials.tex3; 
         } else if (child.name == "coffee_ice" || child.name == "water_bottle"){ 
           child.material = glassMaterial;
         } else if (child.name == "output_lightblub" || child.name == "plant_light_pipe"){ 
@@ -94,7 +102,7 @@ function Scene() {
             opacity: 0.9,
           });
         } else if (child.name=="TextureTwo_Speaker"){
-          child.material = new THREE.MeshBasicMaterial({ map: tex2 })
+          child.material = sharedMaterials.tex2; 
         }
         
         if (child.material.map){ 
@@ -124,7 +132,6 @@ function Scene() {
           e.stopPropagation();
 
           if (e.object.userData.clickable) {
-            
             document.body.style.cursor = "pointer";
           }
         }}
@@ -491,7 +498,7 @@ export default function App() {
         <Suspense fallback={null}>
           <Scene/>
           <SceneMovement/>
-          <Helper/>
+          {/* <Helper/> */}
           <Stats/>
         </Suspense> 
       </Canvas>
