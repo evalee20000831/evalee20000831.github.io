@@ -8,8 +8,7 @@ import Helper from './Helper.jsx'
 function Scene() {
   console.log("Scene rendered");
   const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
-
-  const { scene, materials, nodes } = useGLTF(asset('/models/room_v9.glb'))
+  const { scene, materials, nodes } = useGLTF(asset('models/room_v9.glb'))
 
   const glassMaterial = useMemo(()=> 
     new THREE.MeshPhysicalMaterial({
@@ -41,7 +40,7 @@ function Scene() {
 
   const {videoTexture} = useMemo(() => {
     const vid = document.createElement("video"); 
-    vid.src = asset("/video/Blender_Animation.mp4");
+    vid.src = asset("video/Blender_Animation.mp4");
     vid.loop = true; 
     vid.muted = true; 
     vid.playsInline = true; 
@@ -58,9 +57,9 @@ function Scene() {
   
   
   const [tex1, tex2, tex3] = useTexture([
-    asset('/textures/TextureSetOne.webp'),
-    asset('/textures/TextureSetTwo.webp'),
-    asset('/textures/TextureSetThree.webp'),
+    asset('textures/TextureSetOne.webp'),
+    asset('textures/TextureSetTwo.webp'),
+    asset('textures/TextureSetThree.webp'),
   ])
 
   ;[tex1, tex2, tex3].forEach((tex) => {
