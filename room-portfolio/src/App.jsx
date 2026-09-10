@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import Helper from './Helper.jsx'
 
 
-function Scene() {
+function Scene( {audioRef} ) {
   console.log("Scene rendered");
   const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
   const { scene, materials, nodes } = useGLTF(asset('models/room_v9.glb'))
@@ -148,7 +148,7 @@ function Scene() {
           }
         }}
       />
-      {speaker && (<SpeakerAudio object={speaker} />)}
+      {speaker && (<SpeakerAudio object={speaker} audioRef={audioRef}/>)}
       <FishMovement fish={fish1} />
       <FishMovement fish={fish2} />
       <FishMovement fish={fish3} />
@@ -157,14 +157,14 @@ function Scene() {
   )
 }
 
-function SpeakerAudio({ object }) {
+function SpeakerAudio({ object, audioRef }) {
 
   console.log("SpeakerAudio Plays")
   return (
     <primitive object={object}>
       <PositionalAudio
         url={`${import.meta.env.BASE_URL}audio/citypop.mp3`}
-        autoplay
+        ref={audioRef}
         loop
         distance={3}
         volume={1}
@@ -474,6 +474,8 @@ function FishMovement({ fish }){
 export default function App() {
   const [entered, setEntered] = useState(false)
   const [transition, setTransition] = useState(false)
+  const audioRef = useRef();
+
   const [displayProgress, setDisplayProgress] = useState(0)
   const {progress} = useProgress()
   const ready = displayProgress >= 100 
@@ -482,9 +484,20 @@ export default function App() {
     setDisplayProgress((current) => Math.max(current, progress));
   }, [progress]);
 
-  const handleEnter = () => {
-    setTransition(true); 
-  }; 
+  const handleEnter = async () => {
+    try {
+      // restart the Web Audio API context after it has been suspended by the browser
+      await THREE.AudioContext.getContext().resume();
+
+      if (audioRef.current && !audioRef.current.isPlaying) {
+        audioRef.current.play();
+      }
+    } catch (error) {
+      console.error("Could not start audio:", error);
+    }
+
+    setTransition(true);
+  };
 
   const handleTransitionComplete = () => {
     setEntered(true);
@@ -496,10 +509,10 @@ export default function App() {
       
       <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
         <Suspense fallback={null}>
-          <Scene/>
+          <Scene audioRef={audioRef}/>
           <SceneMovement/>
           {/* <Helper/> */}
-          <Stats/>
+          {/* <Stats/> */}
         </Suspense> 
       </Canvas>
       
