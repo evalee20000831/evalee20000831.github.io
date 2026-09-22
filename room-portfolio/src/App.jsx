@@ -1,11 +1,11 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber'
 import { OrbitControls, PositionalAudio, useGLTF, useTexture, Stats, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import Helper from './Helper.jsx'
 
 
-function Scene( {audioRef} ) {
+function Scene( {audioRef, onAudioReady} ) {
   console.log("Scene rendered");
   const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
   const { scene, materials, nodes } = useGLTF(asset('models/room_v9.glb'))
@@ -148,7 +148,9 @@ function Scene( {audioRef} ) {
           }
         }}
       />
-      {speaker && (<SpeakerAudio object={speaker} audioRef={audioRef}/>)}
+      {speaker && (<SpeakerAudio object={speaker} 
+                                  audioRef={audioRef}
+                                  onAudioReady={onAudioReady}/>)}
       <FishMovement fish={fish1} />
       <FishMovement fish={fish2} />
       <FishMovement fish={fish3} />
@@ -157,9 +159,20 @@ function Scene( {audioRef} ) {
   )
 }
 
-function SpeakerAudio({ object, audioRef }) {
+function SpeakerAudio({ object, audioRef, onAudioReady }) {
 
-  console.log("SpeakerAudio Plays")
+  console.log("SpeakerAudio Loads")
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (audioRef.current?.buffer) {
+        console.log("Audio loaded")
+        clearInterval(interval)
+        onAudioReady();
+      }
+    }, 50);
+  }, []);
+
   return (
     <primitive object={object}>
       <PositionalAudio
@@ -477,12 +490,14 @@ export default function App() {
   const audioRef = useRef();
 
   const [displayProgress, setDisplayProgress] = useState(0)
+  const [audioReady, setAudioReady] = useState(false);
   const {progress} = useProgress()
-  const ready = displayProgress >= 100 
+  const ready = displayProgress >= 100 && audioReady
 
   useEffect(()=> {
-    setDisplayProgress((current) => Math.max(current, progress));
-  }, [progress]);
+    const target = audioReady ? progress : Math.min(progress, 95)
+    setDisplayProgress((current) => Math.max(current, target));
+  }, [progress, audioReady]);
 
   const handleEnter = async () => {
     try {
@@ -509,7 +524,8 @@ export default function App() {
       
       <Canvas camera={{ position: [2.19, 4.40, 2.37] }}>
         <Suspense fallback={null}>
-          <Scene audioRef={audioRef}/>
+          <Scene audioRef={audioRef} 
+                onAudioReady={() => setAudioReady(true)}/>
           <SceneMovement/>
           {/* <Helper/> */}
           {/* <Stats/> */}
